@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import <SpeechKit/SpeechKit.h>
+#import <CoreLocation/CoreLocation.h>
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate, CLLocationManagerDelegate>
 

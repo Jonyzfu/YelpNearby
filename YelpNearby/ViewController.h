@@ -13,7 +13,7 @@
 #import "YelpAPIService.h"
 
 
-@interface ViewController : UIViewController <UITextFieldDelegate, UITableViewDelegate, UITableViewDataSource, SpeechKitDelegate, SKRecognizerDelegate, iSpeechSDKDelegate, ISSpeechRecognitionDelegate, YelpAPIServiceDelegate>
+@interface ViewController : UIViewController <UITextFieldDelegate, UITableViewDelegate, UITableViewDataSource, SpeechKitDelegate, SKRecognizerDelegate, iSpeechSDKDelegate, ISSpeechRecognitionDelegate, YelpAPIServiceDelegate, ISSpeechSynthesisDelegate>
 
 @property (weak, nonatomic) IBOutlet UITextField *searchTextField;
 @property (weak, nonatomic) IBOutlet UIButton *recordButton;
@@ -27,6 +27,8 @@
 
 @property (strong, nonatomic) SKRecognizer *voiceSearch;
 @property (strong, nonatomic) ISSpeechRecognition *isVoiceSearch;
+@property (strong, nonatomic) ISSpeechSynthesis *synthesis;
+@property BOOL isSpeaking;
 
 @property (strong, nonatomic) YelpAPIService *yelpService;
 @property (strong, nonatomic) NSString *searchCriteria;

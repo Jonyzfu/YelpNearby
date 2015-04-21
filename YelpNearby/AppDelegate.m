@@ -9,6 +9,8 @@
 #import "AppDelegate.h"
 #import "iSpeechSDK.h"
 
+#define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
+
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -18,6 +20,10 @@
     self.customLocationManager = [[CLLocationManager alloc] init];
     self.customLocationManager.desiredAccuracy = kCLLocationAccuracyKilometer;
     self.customLocationManager.delegate = self;
+    if (IS_OS_8_OR_LATER) {
+        [self.customLocationManager requestWhenInUseAuthorization];
+        [self.customLocationManager requestAlwaysAuthorization];
+    }
     [self.customLocationManager startUpdatingLocation];
     
     iSpeechSDK *sdk = [iSpeechSDK sharedSDK];
@@ -54,6 +60,7 @@
 }
 
 # pragma mark - Updates user's current location
+
 
 -(void)updateCurrentLocation {
     [self.customLocationManager startUpdatingLocation];

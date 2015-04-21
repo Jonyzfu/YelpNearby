@@ -9,7 +9,7 @@
 #import "ViewController.h"
 #import "Restaurant.h"
 #import "ResultTableViewCell.h"
-@import AVFoundation;
+
 
 
 const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0xa7, 0x57, 0x9a, 0xfe, 0x9d, 0x13, 0x89, 0xd3, 0x6c, 0x5f, 0x02, 0x02, 0xd7, 0x69, 0x53, 0x2a, 0x2e, 0xb1, 0x8b, 0x35, 0x88, 0x8f, 0x41, 0x42, 0xb8, 0x91, 0xcc, 0x60, 0xdb, 0xf8, 0x82, 0x82, 0x50, 0x1c, 0x80, 0xed, 0x2f, 0x09, 0xc0, 0x9b, 0x69, 0xc2, 0x9e, 0x40, 0x2c, 0xf1, 0x6a, 0x5a, 0xa3, 0xf5, 0x90, 0x2b, 0x84, 0xd1, 0x6d, 0x3c, 0x62, 0x39, 0x9d};
@@ -20,6 +20,8 @@ const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0
 
 
 @implementation ViewController
+
+
 
 - (void)viewDidLoad
 {
@@ -45,6 +47,8 @@ const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
+
 
     
 # pragma mark - TableView Datasource and Delegate methods
@@ -128,18 +132,29 @@ const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0
             [alert show];
         }
         
+        
     }
-//    else {
+    else {
+        if (self.isSpeaking) {
+            [self.synthesis cancel];
+            self.isSpeaking = NO;
+        }
 //        if (self.voiceSearch) { // This will stop existing speech recognizer processes
 //            [self.voiceSearch stopRecording];
 //            [self.voiceSearch cancel];
 //        }
-//    }
+    }
 }
 
 - (void)recognition:(ISSpeechRecognition *)speechRecognition didGetRecognitionResult:(ISSpeechRecognitionResult *)result {
     self.searchTextField.text = [result text];
     self.recordButton.selected = !self.recordButton.isSelected;
+    
+    // This will extract category filter from search text
+    NSString *yelpCategoryFilter = [self getYelpCategoryFromSearchText];
+    
+    // This will find nearby restaurants by category
+    [self findNearByRestaurantsFromYelpbyCategory:yelpCategoryFilter];
 }
 
 - (void)recognition:(ISSpeechRecognition *)speechRecognition didFailWithError:(NSError *)error {
@@ -161,7 +176,7 @@ const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0
 }
 
 - (void)recognitionDidFinishRecording:(ISSpeechRecognition *)speechRecognition {
-    self.messageLabel.text = @"Searching...";
+    self.messageLabel.text = @"Done Listening.";
 }
 
 # pragma mark - SKRecognizer Delegate Methods
@@ -216,5 +231,72 @@ const unsigned char SpeechKitApplicationKey[] = {0x8a, 0xa8, 0x4a, 0x2c, 0x21, 0
 }
 
 
+- (void)findNearByRestaurantsFromYelpbyCategory:(NSString *)categoryFilter {
+    // CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+     if (categoryFilter && categoryFilter.length > 0) {
+        if (([CLLocationManager authorizationStatus] != kCLAuthorizationStatusDenied)
+            && self.appDelegate.currentUserLocation &&
+            self.appDelegate.currentUserLocation.coordinate.latitude) {
+            [self.tableViewDisplayDataArray removeAllObjects];
+            [self.resultTableView reloadData];
+            
+            self.messageLabel.text = @"Fetching results...";
+            self.activityIndicator.hidden = NO;
+            
+            self.yelpService = [[YelpAPIService alloc] init];
+            self.yelpService.delegate = self;
+            
+            self.searchCriteria = categoryFilter;
+            
+            [self.yelpService searchNearByRestaurantsByFilter:[categoryFilter lowercaseString]
+                                                   atLatitude:self.appDelegate.currentUserLocation.coordinate.latitude
+                                                 andLongitude:self.appDelegate.currentUserLocation.coordinate.longitude];
+            
+        } else {
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Location is Disabled"
+                                                            message:@"Enable it in settings and try again"delegate:nil
+                                                  cancelButtonTitle:@"OK"
+                                                  otherButtonTitles:nil];
+            [alert show];
+        }
+     }
+}
+
+- (void)loadResultWithDataArray:(NSArray *)resultArray {
+    self.messageLabel.text = @"Tap on the mic";
+    self.activityIndicator.hidden = YES;
+    
+    self.tableViewDisplayDataArray = [resultArray mutableCopy];
+    [self.resultTableView reloadData];
+    
+    if (self.isSpeaking) {
+        [self.synthesis cancel];
+    }
+    
+    self.isSpeaking = YES;
+    
+    self.synthesis.delegate = self;
+    if ([self.tableViewDisplayDataArray count] > 0) {
+        
+        self.synthesis = [[ISSpeechSynthesis alloc] initWithText:[NSString stringWithFormat:@"I found %lu %@ restaurants",(unsigned long)[self.tableViewDisplayDataArray count],self.searchCriteria]];
+        NSError *error;
+        if ([self.synthesis speak:&error]) {
+            if (self.isSpeaking) {
+                [self.synthesis cancel];
+            }
+            self.isSpeaking = NO;
+        }
+    } else {
+        self.synthesis = [[ISSpeechSynthesis alloc] initWithText:[NSString stringWithFormat:@"I could not find any %@ restaurants",self.searchCriteria]];
+        NSError *error;
+        if ([self.synthesis speak:&error]) {
+            if (self.isSpeaking) {
+                [self.synthesis cancel];
+            }
+            self.isSpeaking = NO;
+        }
+    }
+    
+}
 
 @end

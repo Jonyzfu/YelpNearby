@@ -137,7 +137,7 @@
 	}
 
 	if (self.parameters) {
-		[request setParameters:self.parameters];
+		// [request setParameters:self.parameters];
 	}
 //	if (self.files) {
 //		for (NSString *key in self.files) {
